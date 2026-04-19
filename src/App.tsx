@@ -20,7 +20,6 @@ type Stage =
   | "originDone"
   | "node"
   | "feedback"
-  | "identity"
   | "result";
 
 type OriginQuestion = {
@@ -749,7 +748,7 @@ const storyNodes: NodeItem[] = [
     id: "N10",
     title: "第一次发现，自己在人群里会扮演某种版本的自己",
     prompt:
-      "你并不是故意伪装。只是面对不同的人，你会自然地换一种语气、神情和分寸，像在不同场合借住不同的自己。",
+      "你并不是故意伪装。只是面对不同的人，你会自然地换一种语气、神情和分寸，像在不同场合借助不同的自己。",
     options: [
       {
         id: "N10A",
@@ -790,7 +789,7 @@ const storyNodes: NodeItem[] = [
         id: "N10D",
         text: "我会有点抗拒，想知道如果我不配合表演，会发生什么",
         feedback:
-          "你心里有一部分，不想一直借角色活着。那个想把面具摘下来的人，后来会越来越常出现。",
+          "你心里有一部分，不想一直借助角色活着。那个想把面具摘下来的人，后来会越来越常出现。",
         effects: {
           rebellion: 2,
           reinvention: 1,
@@ -1167,6 +1166,10 @@ function countHits(picks: Set<string>, ids: string[]): number {
   return ids.filter((id) => picks.has(id)).length;
 }
 
+function belongsToNode(answerId: string, nodeId: string): boolean {
+  return answerId.startsWith(nodeId) && answerId.length === nodeId.length + 1;
+}
+
 function breakTie(
   scoreMap: Record<string, number>,
   traits: Traits,
@@ -1225,7 +1228,7 @@ function calculateResult(
   });
 
   storyNodes.forEach((node) => {
-    const selectedId = nodeAnswers.find((id) => id.startsWith(node.id));
+    const selectedId = nodeAnswers.find((id) => belongsToNode(id, node.id));
     const selected = node.options.find((o) => o.id === selectedId);
     if (selected) traits = addEffects(traits, selected.effects);
   });
@@ -1417,7 +1420,6 @@ function App() {
   const [originIndex, setOriginIndex] = useState(0);
   const [nodeIndex, setNodeIndex] = useState(0);
   const [currentFeedback, setCurrentFeedback] = useState("");
-  const [identityMode, setIdentityMode] = useState<"self" | "parallel" | "">("");
   const [originAnswers, setOriginAnswers] = useState<Record<string, string>>({});
   const [nodeAnswers, setNodeAnswers] = useState<string[]>([]);
   const [imageFailed, setImageFailed] = useState(false);
@@ -1433,26 +1435,39 @@ function App() {
 
   useEffect(() => {
     setImageFailed(false);
-  }, [result.id, stage, identityMode]);
+  }, [result.id, stage]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [stage]);
 
   if (stage === "cover") {
     return (
       <main className="fate-shell">
-        <div className="fate-panel" style={{ ...wrapStyle, textAlign: "center", lineHeight: 1.9 }}>
-          <p className="fate-eyebrow">命运侧录</p>
-          <h1 style={{ fontSize: "38px", marginBottom: "12px", letterSpacing: "0.08em" }}>
-            命运侧录
-          </h1>
-          <p style={{ fontSize: "14px", opacity: 0.7, marginBottom: "28px" }}>
-            一次关于命运、补偿与自我命名的互动阅读
-          </p>
-          <p style={{ marginBottom: "32px", fontSize: "16px" }}>
+        <div
+          className="fate-panel"
+          style={{
+            ...wrapStyle,
+            textAlign: "center",
+            lineHeight: 1.9,
+            minHeight: "100dvh",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <h1 style={coverTitleStyle}>命运侧录</h1>
+
+          <p style={coverSubTitleStyle}>一次关于命运、补偿与自我命名的互动阅读</p>
+
+          <p style={coverBodyStyle}>
             有些人生适合被讲述，
             <br />
             有些人生只适合被侧写。
             <br />
             请开始读取你的那一份。
           </p>
+
           <button onClick={() => setStage("intro")} style={buttonStyle}>
             开始侧写
           </button>
@@ -1464,12 +1479,20 @@ function App() {
   if (stage === "intro") {
     return (
       <main className="fate-shell">
-        <div className="fate-panel" style={{ ...wrapStyle, textAlign: "center" }}>
+        <div
+          className="fate-panel"
+          style={{
+            ...wrapStyle,
+            textAlign: "center",
+            minHeight: "100dvh",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
           <h1 style={titleStyle}>进入侧录</h1>
           <p style={promptStyle}>
             接下来，你将进入一段由起点、环境与选择共同塑造的人生。
-            <br />
-            你可以复录自己，也可以替另一个版本的你做决定。
             <br />
             这里没有答案。
           </p>
@@ -1534,7 +1557,17 @@ function App() {
   if (stage === "originDone") {
     return (
       <main className="fate-shell">
-        <div className="fate-panel" style={{ ...wrapStyle, textAlign: "center" }}>
+        <div
+          className="fate-panel"
+          style={{
+            ...wrapStyle,
+            textAlign: "center",
+            minHeight: "100dvh",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
           <p style={kickerStyle}>开局完成</p>
           <h1 style={titleStyle}>你已完成开局四维</h1>
 
@@ -1565,7 +1598,7 @@ function App() {
   }
 
   if (stage === "node" && currentNode) {
-    const selectedNodeId = nodeAnswers.find((id) => id.startsWith(currentNode.id)) || "";
+    const selectedNodeId = nodeAnswers.find((id) => belongsToNode(id, currentNode.id)) || "";
 
     return (
       <main className="fate-shell">
@@ -1582,7 +1615,7 @@ function App() {
                 key={option.id}
                 onClick={() => {
                   setNodeAnswers((prev) => [
-                    ...prev.filter((id) => !id.startsWith(currentNode.id)),
+                    ...prev.filter((id) => !belongsToNode(id, currentNode.id)),
                     option.id,
                   ]);
                   setCurrentFeedback(option.feedback);
@@ -1602,8 +1635,18 @@ function App() {
   if (stage === "feedback") {
     return (
       <main className="fate-shell">
-        <div className="fate-panel" style={{ ...wrapStyle, textAlign: "center" }}>
-          <p style={promptStyle}>{currentFeedback}</p>
+        <div
+          className="fate-panel"
+          style={{
+            ...wrapStyle,
+            minHeight: "100dvh",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            textAlign: "center",
+          }}
+        >
+          <p style={{ ...promptStyle, marginBottom: "24px" }}>{currentFeedback}</p>
 
           <button
             onClick={() => {
@@ -1611,7 +1654,7 @@ function App() {
                 setNodeIndex((prev) => prev + 1);
                 setStage("node");
               } else {
-                setStage("identity");
+                setStage("result");
               }
             }}
             style={buttonStyle}
@@ -1623,102 +1666,72 @@ function App() {
     );
   }
 
-  if (stage === "identity") {
-    return (
-      <main className="fate-shell">
-        <div className="fate-panel" style={wrapStyle}>
-          <p style={promptStyle}>
-            这一路的选择，属于你自己，还是属于平行世界里那个从未真正活过的你？
-          </p>
-
-          <div style={listStyle}>
-            <button
-              onClick={() => {
-                setIdentityMode("self");
-                setStage("result");
-              }}
-              style={getOptionStyle(identityMode === "self")}
-            >
-              这是我自己
-            </button>
-
-            <button
-              onClick={() => {
-                setIdentityMode("parallel");
-                setStage("result");
-              }}
-              style={getOptionStyle(identityMode === "parallel")}
-            >
-              这是平行世界的我
-            </button>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <main className="fate-shell">
-      <div className="fate-panel" style={{ ...wrapStyle, textAlign: "center" }}>
-        <p style={kickerStyle}>
-          {identityMode === "self"
-            ? "这一份侧录，已归入你本人名下。"
-            : "这一份侧录，来自那个差一点活成真的你。"}
-        </p>
-
+      <div
+        className="fate-panel"
+        style={{
+          ...wrapStyle,
+          textAlign: "center",
+          minHeight: "100dvh",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+        }}
+      >
         <div
-          className={identityMode === "parallel" ? "fate-card-frame parallel" : "fate-card-frame"}
           style={{
-            padding: imageFailed ? "40px 20px" : "0",
+            width: "100%",
             marginBottom: "24px",
+            borderRadius: "26px",
+            overflow: "hidden",
+            border: "1px solid rgba(255,255,255,0.14)",
+            background: "rgba(255,255,255,0.02)",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.22)",
           }}
         >
           {!imageFailed && resultImage ? (
             <img
               src={resultImage}
               alt={result.name}
-              className="fate-card-image"
               onError={() => {
                 setImageFailed(true);
               }}
+              style={{
+                display: "block",
+                width: "100%",
+                height: "auto",
+              }}
             />
           ) : (
-            <div>
-              <p style={{ ...kickerStyle, marginBottom: "8px" }}>卡牌图片没有成功加载</p>
-              <h2 style={{ fontSize: "28px", margin: 0 }}>{result.name}</h2>
+            <div
+              style={{
+                padding: "56px 24px",
+                textAlign: "center",
+              }}
+            >
+              <h2 style={{ ...titleStyle, marginBottom: "12px" }}>{result.name}</h2>
               <p style={{ ...promptStyle, marginBottom: 0 }}>
-                请检查 src/assets/cards 中是否存在对应图片文件。
+                卡牌图片没有成功加载，请稍后刷新再试一次。
               </p>
             </div>
           )}
         </div>
 
-        <div style={{ display: "flex", gap: "12px", flexDirection: "column" }}>
-          <button
-            style={buttonStyle}
-            onClick={() => {
-              alert("这一步先留作占位，后面我们再做保存图片功能。");
-            }}
-          >
-            保存这份侧录
-          </button>
-
-          <button
-            onClick={() => {
-              setStage("cover");
-              setOriginIndex(0);
-              setNodeIndex(0);
-              setCurrentFeedback("");
-              setIdentityMode("");
-              setOriginAnswers({});
-              setNodeAnswers([]);
-              setImageFailed(false);
-            }}
-            style={secondaryButtonStyle}
-          >
-            再读一次人生
-          </button>
-        </div>
+        <button
+          onClick={() => {
+            setStage("cover");
+            setOriginIndex(0);
+            setNodeIndex(0);
+            setCurrentFeedback("");
+            setOriginAnswers({});
+            setNodeAnswers([]);
+            setImageFailed(false);
+          }}
+          style={secondaryButtonStyle}
+        >
+          再读一遍人生
+        </button>
       </div>
     </main>
   );
@@ -1750,6 +1763,30 @@ const promptStyle: CSSProperties = {
   lineHeight: 1.95,
   marginBottom: "28px",
   textAlign: "center",
+};
+
+const coverTitleStyle: CSSProperties = {
+  fontSize: "clamp(42px, 11vw, 58px)",
+  marginBottom: "16px",
+  letterSpacing: "0.12em",
+  lineHeight: 1.1,
+  fontWeight: 500,
+  fontFamily:
+    '"Baskerville", "Times New Roman", "Georgia", "Songti SC", "STSong", serif',
+};
+
+const coverSubTitleStyle: CSSProperties = {
+  fontSize: "14px",
+  opacity: 0.72,
+  marginBottom: "28px",
+  lineHeight: 1.9,
+  letterSpacing: "0.06em",
+};
+
+const coverBodyStyle: CSSProperties = {
+  marginBottom: "32px",
+  fontSize: "16px",
+  lineHeight: 2,
 };
 
 const listStyle: CSSProperties = {
